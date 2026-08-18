@@ -54,3 +54,49 @@ async def _restart(_, m: types.Message):
     except Exception: pass
 
     os.execl(sys.executable, sys.executable, "-m", "ArchonMusic")
+
+
+# --- NAYA UPDATE COMMAND YAHAN HAI ---
+@app.on_message(filters.command(["update"]) & app.sudoers)
+async def _update(_, m: types.Message):
+    sent = await m.reply_text("🔄 **Checking for updates from GitHub...**")
+
+    try:
+        # Git pull command run karne ke liye subprocess ka use
+        process = await asyncio.create_subprocess_shell(
+            "git pull",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+        output = stdout.decode().strip()
+        error = stderr.decode().strip()
+
+        # Agar bot pehle se updated hai
+        if "Already up to date." in output:
+            return await sent.edit_text("✅ **Bot is already up to date with GitHub.**")
+
+        # Agar git pull me koi error aati hai
+        if process.returncode != 0:
+            return await sent.edit_text(f"❌ **Update failed:**\n\n`{error}`")
+
+        # Update successful hone par restart logic
+        await sent.edit_text(f"✅ **Successfully pulled updates!**\n\n`{output}`\n\n🔄 **Restarting bot now baby...**")
+
+        # Cache aur downloads folder clean karna (jaisa restart me hai)
+        for directory in ["cache", "downloads"]:
+            shutil.rmtree(directory, ignore_errors=True)
+
+        asyncio.create_task(stop())
+        await asyncio.sleep(2)
+
+        try: 
+            os.remove("log.txt")
+        except Exception: 
+            pass
+
+        # Bot ko naye code ke sath run karna
+        os.execl(sys.executable, sys.executable, "-m", "ArchonMusic")
+
+    except Exception as e:
+        await sent.edit_text(f"❌ **Error during update:**\n`{e}`")
