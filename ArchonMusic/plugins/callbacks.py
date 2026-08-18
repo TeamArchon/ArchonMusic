@@ -9,7 +9,7 @@ from ArchonMusic.helpers import admin_check, buttons
 @app.on_callback_query(filters.regex("cancel_dl") & ~app.bl_users)
 @lang.language()
 async def cancel_dl(_, query: types.CallbackQuery):
-    await query.answer()
+    await query.answer("❌ Cancelled", show_alert=False)
     await tg.cancel(query)
 
 
@@ -26,11 +26,11 @@ async def _controls(_, query: types.CallbackQuery):
         if user_id not in app.sudoers and not await db.is_auth(chat_id, user_id):
             admins = await db.get_admins(chat_id)
             if user_id not in admins:
-                return await query.answer(query.lang["user_no_perms"], show_alert=True)
+                return await query.answer(f"🚫 {query.lang['user_no_perms']}", show_alert=True)
 
     if not await db.get_call(chat_id):
         try:
-            return await query.answer(query.lang["not_playing"], show_alert=True)
+            return await query.answer(f"⚠️ {query.lang['not_playing']}", show_alert=True)
         except errors.QueryIdInvalid:
             try:
                 await query.message.delete()
@@ -40,40 +40,41 @@ async def _controls(_, query: types.CallbackQuery):
 
     if action == "status":
         return await query.answer()
-    await query.answer(query.lang["processing"], show_alert=True)
+    
+    await query.answer(f"⚡ {query.lang['processing']}", show_alert=True)
 
     if action == "pause":
         if not await db.playing(chat_id):
             return await query.answer(
-                query.lang["play_already_paused"], show_alert=True
+                f"⏸ {query.lang['play_already_paused']}", show_alert=True
             )
         await ArchonMusic.pause(chat_id)
         if qaction:
             return await query.edit_message_reply_markup(
-                reply_markup=buttons.queue_markup(chat_id, query.lang["paused"], False)
+                reply_markup=buttons.queue_markup(chat_id, f"⏸ {query.lang['paused']}", False)
             )
-        status = query.lang["paused"]
-        reply = query.lang["play_paused"].format(user)
+        status = f"⏸ {query.lang['paused']}"
+        reply = f'<emoji id="6100514338274020922">⏸️</emoji> {query.lang["play_paused"].format(user)}'
 
     elif action == "resume":
         if await db.playing(chat_id):
-            return await query.answer(query.lang["play_not_paused"], show_alert=True)
+            return await query.answer(f"▶️ {query.lang['play_not_paused']}", show_alert=True)
         await ArchonMusic.resume(chat_id)
         if qaction:
             return await query.edit_message_reply_markup(
-                reply_markup=buttons.queue_markup(chat_id, query.lang["playing"], True)
+                reply_markup=buttons.queue_markup(chat_id, f"▶️ {query.lang['playing']}", True)
             )
-        reply = query.lang["play_resumed"].format(user)
+        reply = f'<emoji id="5850346984501680054">▶️</emoji> {query.lang["play_resumed"].format(user)}'
 
     elif action == "skip":
         await ArchonMusic.play_next(chat_id)
-        status = query.lang["skipped"]
-        reply = query.lang["play_skipped"].format(user)
+        status = f"⏭ {query.lang['skipped']}"
+        reply = f'<emoji id="6172332822892647766">🚀</emoji> {query.lang["play_skipped"].format(user)}'
 
     elif action == "force":
         pos, media = queue.check_item(chat_id, args[3])
         if not media or pos == -1:
-            return await query.edit_message_text(query.lang["play_expired"])
+            return await query.edit_message_text(f'<emoji id="5891211339170326418">⌛️</emoji> {query.lang["play_expired"]}')
 
         m_id = queue.get_current(chat_id).message_id
         queue.force_add(chat_id, media, remove=pos)
@@ -85,7 +86,7 @@ async def _controls(_, query: types.CallbackQuery):
         except Exception:
             pass
 
-        msg = await app.send_message(chat_id=chat_id, text=query.lang["play_next"])
+        msg = await app.send_message(chat_id=chat_id, text=f'<emoji id="5409025823388741707">🎵</emoji> {query.lang["play_next"]}')
         if not media.file_path:
             media.file_path = await yt.stream_url(media.id, video=media.video)
             if not media.file_path:
@@ -97,13 +98,13 @@ async def _controls(_, query: types.CallbackQuery):
         media = queue.get_current(chat_id)
         media.user = user
         await ArchonMusic.replay(chat_id)
-        status = query.lang["replayed"]
-        reply = query.lang["play_replayed"].format(user)
+        status = f"🔁 {query.lang['replayed']}"
+        reply = f'<emoji id="6030657343744644592">🔁</emoji> {query.lang["play_replayed"].format(user)}'
 
     elif action == "stop":
         await ArchonMusic.stop(chat_id)
-        status = query.lang["stopped"]
-        reply = query.lang["play_stopped"].format(user)
+        status = f"🛑 {query.lang['stopped']}"
+        reply = f'<emoji id="6271674836628541366">🛑</emoji> {query.lang["play_stopped"].format(user)}'
 
     elif action in ["more", "cthumb", "back"]:
         if action == "cthumb":
@@ -179,10 +180,10 @@ async def _help(_, query: types.CallbackQuery):
             return
 
     if len(data) == 1:
-        return await _render(query.lang["help_menu"], buttons.help_markup(query.lang))
+        return await _render(f'<emoji id="5260512129240276089">📚</emoji> {query.lang["help_menu"]}', buttons.help_markup(query.lang))
 
     if data[1] == "back":
-        return await _render(query.lang["help_menu"], buttons.help_markup(query.lang))
+        return await _render(f'<emoji id="5260512129240276089">📚</emoji> {query.lang["help_menu"]}', buttons.help_markup(query.lang))
     elif data[1] == "home":
         private = query.message.chat.type == enums.ChatType.PRIVATE
         _text = (
@@ -190,7 +191,7 @@ async def _help(_, query: types.CallbackQuery):
             if private
             else query.lang["start_gp"].format(app.name)
         )
-        return await _render(_text, buttons.start_key(query.lang, private))
+        return await _render(f'<emoji id="6172312314423808834">✨</emoji> {_text}', buttons.start_key(query.lang, private))
     elif data[1] == "close":
         try:
             await query.message.delete()
@@ -199,7 +200,7 @@ async def _help(_, query: types.CallbackQuery):
             return
 
     return await _render(
-        query.lang[f"help_{data[1]}"], buttons.help_markup(query.lang, True)
+        f'<emoji id="5370546867786523009">📝</emoji> {query.lang[f"help_{data[1]}"]}', buttons.help_markup(query.lang, True)
     )
 
 
@@ -210,7 +211,8 @@ async def _settings_cb(_, query: types.CallbackQuery):
     cmd = query.data.split()
     if len(cmd) == 1:
         return await query.answer()
-    await query.answer(query.lang["processing"], show_alert=True)
+    
+    await query.answer(f"⚙️ {query.lang['processing']}", show_alert=True)
 
     chat_id = query.message.chat.id
     _admin = await db.get_play_mode(chat_id)
