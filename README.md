@@ -10,12 +10,8 @@ Telegram Music Player Bot, written in Python with Pyrogram and Py-Tgcalls.
 
 Replace `YOUR_GITHUB_USERNAME/YOUR_REPO` below with the GitHub repository containing this project:
 
-```markdown
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO)
-```
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/TeamArchon/ArchonMusic)
 
-```
 
 ### Required environment variables
 
